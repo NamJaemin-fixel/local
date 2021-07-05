@@ -1,0 +1,95 @@
+spring:
+  cloud:
+    gateway:
+      default-filters:
+        - TokenRelay
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins:
+              - "*"
+            allowedMethods:
+              - GET
+              - POST
+      httpclient:
+        wiretap: true
+        connect-timeout: 20000
+        response-timeout: 20s
+      httpserver:
+        wiretap: true
+      routes:
+        - id: vcapp-api-instance
+          uri: http://13.209.13.146/
+          predicates:
+            - Path=/myvc/**
+          filters:
+            - CustomAuthFilter
+            - name: Hystrix
+              args:
+                name: vc-api-fallback
+                fallbackuri: forward:/vcApiFallBack
+        - id: mysc-api-instance
+          uri: http://15.164.230.201/
+          predicates:
+            - Path=/mysc/**
+          filters:
+            - CustomAuthFilter
+            - name: RequestSize
+              args: 
+                maxSize : 10000000
+            - name: Hystrix
+              args:
+                name: vc-api-fallback
+                fallbackuri: forward:/vcApiFallBack
+        - id: vse_app
+          uri: http://13.124.120.152:8710/
+          predicates:
+            - Path=/vse_app/**
+          filters:            
+            - CustomAuthFilter
+            - name: RequestSize
+              args: 
+                maxSize : 7000000
+            - name: Hystrix
+              args:
+                name: vc-api-fallback
+                fallbackuri: forward:/vcApiFallBack
+        - id: y1
+          uri: https://fapi.voicecaddie.co.kr:8810/
+          predicates:
+            - Path=/y1/**
+          filters:            
+            - CustomAuthFilter
+            - name: Hystrix
+              args:
+                name: vc-api-fallback
+                fallbackuri: forward:/vcApiFallBack
+        - id: demo
+          uri: lb://demo
+          predicates:
+            - Path=/demo/**
+          filters:
+            - CustomAuthFilter
+            - name: Hystrix
+              args:
+                name: vc-api-fallback
+                fallbackuri: forward:/vcApiFallBack
+        - id: vc-msc
+          uri: http://52.78.124.57:8750/
+          predicates:
+            - Path=/msc/**
+          filters:
+            - CustomAuthFilter
+            - name: CircuitBreaker
+              args:
+                name: vc-api-fallback
+                fallbackuri: forward:/vcApiFallBack
+                
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone : http://admin:admin@localhost:8761/eureka/
+  instance:
+    hostname: localhost
